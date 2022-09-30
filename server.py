@@ -35,55 +35,59 @@ class MyWebServer(socketserver.BaseRequestHandler):
         #print ("Got a request of: %s\n" % self.data)
         #self.request.sendall(bytearray("OK",'utf-8'))
 
-        #decode into string
+        # decode into string
         data_to_string = self.data.decode('utf-8')
 
-        #first line
+        # first line
         first_line = data_to_string.split('\r\n')[0]
 
-        #first word
+        # first word
         first_word = first_line.split(' ')[0]
 
-        #second word
+        # second word
         second_word = first_line.split(' ')[1]
 
-        #405 Method Not Allowed
-        #make html
         path = ' '
 
-        if first_word == "GET":
-            if "css" not in second_word:
-                if "index.html" not in second_word:
-                    if second_word[-1] == "/":
-                        second_word = second_word + "index.html"
+        if first_word == 'GET':
+            if 'css' not in second_word:
+                if 'index.html' not in second_word:
+                    if second_word[-1] == '/':
+                        second_word = second_word + 'index.html'
                     else:
-                        self.request.sendall(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation:" + second_word +'/','utf-8'))
+                        # handle 301 status code
+                        self.request.sendall(bytearray('HTTP/1.1 301 Moved Permanently\r\nLocation: ' + second_word + '/', 'utf-8'))
                         return 0
-            path = "./www" + second_word
+            path = './www' + second_word
         else:
-            self.request.sendall(bytearray("HTTP/1.1 405 Method Not Allowed",'utf-8'))
+            # handle 405 status code
+            self.request.sendall(bytearray('HTTP/1.1 405 Method Not Allowed', 'utf-8'))
             return 0
 
-        if ".html" in second_word:
-            self.Test_web_server(path,"text/html")
-        elif ".css" in second_word:
-            self.Test_web_server(path,"text/css")
+        if '.css' in second_word:
+            if os.path.exists(path):
+                file = open(path, 'r')
+                data = file.read()
+                # handle 200 status code with css
+                self.request.sendall(bytearray('HTTP/1.1 200 OK\r\nContent-Type: text/css\r\n\r\n' + data, 'utf-8'))
+                return 0
+            else:
+                # handle 404 status code
+                self.request.sendall(bytearray('HTTP/1.1 404 Not Found', 'utf-8'))
+                return 0
+        elif '.html' in second_word:
+            if os.path.exists(path):
+                file = open(path, 'r')
+                data = file.read()
+                # handle 200 status code with html
+                self.request.sendall(bytearray('HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n' + data, 'utf-8'))
+                return 0
+            else:
+                # handle 404 status code
+                self.request.sendall(bytearray('HTTP/1.1 404 Not Found', 'utf-8'))
+                return 0
 
 
-    def Test_web_server(self,path,type):
-        #print("path: ",path)
-        if os.path.exists(path):
-           file = open(path,'r')
-           data = file.read()
-           #print("200",type)
-           self.request.sendall(bytearray('HTTP/1.1 200 OK\r\n'+"Content-Type:" +type +"\r\n"  +"\r\n\r\n"+data,'utf-8'))
-           return 0
-        else:
-            #print("404")
-            self.request.sendall(bytearray("HTTP/1.1 404 Not Found\r\n\r\n404 Not Found",'utf-8'))
-            return 0
-
-        
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
 
